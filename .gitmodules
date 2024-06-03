@@ -1,0 +1,3 @@
+[submodule "packages/electrobun"]
+	path = packages/electrobun
+	url = https://github.com/blackboardsh/electrobun.git

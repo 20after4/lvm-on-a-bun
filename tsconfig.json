@@ -6,6 +6,7 @@
     "moduleDetection": "force",
     "esModuleInterop": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "htlx",
     "allowJs": true,
 
     /* Bundler mode */

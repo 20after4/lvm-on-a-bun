@@ -1,15 +1,23 @@
 {
-  "dependencies": { "@pextra/node-lvm": "^0.6.1", "blipgloss": "^0.3.0", "htl": "^0.3.1", "webview-bun": "^2.0.0" },
+  "dependencies": {
+    "@pextra/node-lvm": "^0.6.1",
+    "blipgloss": "^0.3.0",
+    "htl": "^0.3.1",
+    "webview-bun": "^2.0.0",
+    "htlx": "workspace:../htlx",
+    "electrobun": "workspace:../electrobun"
+  },
   "devDependencies": {
     "@types/bun": "^1.1.1",
     "bun-plugin-csv": "^0.1.4"
   },
-
-  "workspaces": ["packages/*"],
+  "scripts": {
+    "build:dev": "electrobun build:"
+  },
   "main": "",
   "bin": "",
   "name": "lvm-on-a-bun",
-  "module": "lvm.ts",
+  "module": "cli.ts",
   "type": "module",
   "types": "global.d.ts",
   "peerDependencies": {

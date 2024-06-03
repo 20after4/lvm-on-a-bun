@@ -1,11 +1,17 @@
 import { Border,  NewStyle, Style } from 'blipgloss';
 import type {CustomBorder} from 'blipgloss';
-import type { ParsedInputEvent } from './term.ts';
+import type { InputEvent } from './term.ts';
 import  { Keycodes } from './term.ts';
+export interface Renderable {
+    Render():string;
+}
+
 type hexColor = `#${string}`
-export class Table<T extends Record<string, any>> {
+type tableField = Record<string, any>;
+export class Table implements Renderable {
     widths : Record<string, number>
-    rows:Array<T> = [];
+    width:number = 0
+    rows:Array<tableField[]> = [];
     cols:Array<string> = [];
     colKeys:Record<string, string> = {};
     selectedIndex = 0;
@@ -14,11 +20,15 @@ export class Table<T extends Record<string, any>> {
         this.widths = {};
     }
 
-    sort(compareFn?: (a: T, b: T) => number): Array<T> {
+    update(evt:InputEvent) {
+    }
+
+    sort(compareFn?: (a: tableField, b: tableField) => number): Array<tableField> {
         return this.rows.sort(compareFn);
     }
 
-    addRow(row:T) {
+    addRow(row:tableField[]) {
+        var width = 0;
         for (const k in row) {
             if (! (k in this.colKeys)) {
                 this.cols.push(k);
@@ -26,7 +36,9 @@ export class Table<T extends Record<string, any>> {
                 this.colKeys[k] = k;
             }
             this.widths[k] = Math.max(this.widths[k], String(row[k]).length);
+            width += this.widths[k];
         }
+        this.width = Math.max(this.width, width);
         this.rows.push(row);
     }
 
@@ -34,7 +46,7 @@ export class Table<T extends Record<string, any>> {
         return '';
     }
 
-    TR(row:T, selected:boolean=false):string {
+    TR(row:tableField[], selected:boolean=false):string {
         return '';
     }
 
@@ -50,14 +62,14 @@ export class Table<T extends Record<string, any>> {
     }
 }
 
-export class HTMLTable<T extends Record<string, any>> extends Table<T> {
+export class HTMLTable extends Table {
 
     THead() {
         const cols = this.cols.map(k => `<th>${k}</th>`);
         return `<thead><tr>${cols.join('')}</tr></thead>`;
     }
 
-    TR(row:T) {
+    TR(row:tableField[]) {
         const line = [];
         for (const k in row) {
             line.push(`<td>${row[k]}</td>`);
@@ -81,7 +93,7 @@ export class HTMLTable<T extends Record<string, any>> extends Table<T> {
     }
 }
 
-export class TUITable<T extends Record<string, any>> extends Table<T> {
+export class TUITable extends Table {
 
     colStyle:Style;
     headStyle:Style;
@@ -119,11 +131,14 @@ export class TUITable<T extends Record<string, any>> extends Table<T> {
 
     }
 
-    update(evt:ParsedInputEvent) {
+    update(evt:InputEvent) {
         if (evt.code == Keycodes.DOWN && this.selectedIndex < this.rows.length - 1) {
             this.selectedIndex++;
-        } else if (evt.code == Keycodes.UP && this.selectedIndex > 0) {
+            return this;
+        }
+        if (evt.code == Keycodes.UP && this.selectedIndex > 0) {
             this.selectedIndex--;
+            return this;
         }
     }
 
@@ -132,11 +147,11 @@ export class TUITable<T extends Record<string, any>> extends Table<T> {
         return cols.join('');
     }
 
-    TR(row:T, selected:boolean=false) {
+    TR(row:tableField[], selected:boolean=false) {
         const style = selected ? this.selectionStyle : this.colStyle;
         const line = [];
         for (const k in row) {
-            line.push(style.Width(this.widths[k]+2).Render(row[k]));
+            line.push(style.Width(this.widths[k]+2).Render(String(row[k])));
         }
         return line.join('');
     }

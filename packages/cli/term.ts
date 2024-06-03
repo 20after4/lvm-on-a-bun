@@ -48,6 +48,7 @@ export interface CursorPosition {
     col: number,
 }
 
+type InputListener = (event:InputEvent) => void;
 
 
 /** A simple utility class to write terminal escape sequences to an output
@@ -63,20 +64,37 @@ export class Term {
     writer;
     buffered = false;
     currentStyle?: lipgloss.Style;
+    inputListeners:Set<InputListener>;
 
     constructor(stdin:NodeJS.ReadStream, out:Bun.BunFile) {
         stdin.unref();
         stdin.setEncoding( 'utf8' );
         stdin.on('data', (data) => {
             const input = KeyboardInputHandler(data as unknown as string);
-            this.input(input);
+            this.dispatchEvent(input);
         })
         this.stdin = stdin;
         this.out = out;
         this.writer = out.writer();
         this.writer.unref();
-
+        this.inputListeners = new Set();
     }
+
+    addInputListener(callback: InputListener): void {
+        this.inputListeners.add(callback);
+    }
+
+    async dispatchEvent(event: InputEvent): Promise<boolean> {
+        for (const listener of this.inputListeners) {
+            await listener(event);
+        }
+        return true;
+    }
+
+    removeEventListener(callback: InputListener): void {
+        this.inputListeners.delete(callback);
+    }
+
     /** Automatically flush writes immediately as soon as output is ready to be written to the terminal. */
     autoflush() { this.buffered == false; this.flush(); return this; }
     /**
@@ -136,7 +154,7 @@ export class Term {
         }
         return this;
     }
-    input(evt:ParsedInputEvent) {  }
+    input(evt:InputEvent) {  }
 }
 
 export enum Keycodes {
@@ -147,11 +165,15 @@ export enum Keycodes {
 }
 export type Keycode = keyof typeof Keycodes;
 export type Keysym = typeof Keycodes[Keycode];
-export type ParsedInputEvent = { code?: Keycodes, sym?: Keycodes|string, raw: string }
+export interface InputEvent {
+     code?: Keycodes;
+     sym?: Keycodes|string;
+     raw: string;
+}
 
-export function KeyboardInputHandler(input:string):ParsedInputEvent {
+export function KeyboardInputHandler(input:string):InputEvent {
 
-    var evt:ParsedInputEvent = { raw: input }
+    var evt:InputEvent = { raw: input }
     var sym:Keysym;
     if (input.length == 1) {
         evt.sym = input;
